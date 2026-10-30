@@ -194,7 +194,7 @@ namespace Requestrr.WebApi.RequestrrBot.ChatClients.Discord
 
         public async Task ShowMovieDeletionSelection(IReadOnlyList<Movie> movies)
         {
-            var options = movies.Take(15).Select(x => new DiscordSelectComponentOption(GetFormatedMovieTitle(x), x.TheMovieDbId)).ToList();
+            var options = movies.Take(15).Select(x => new DiscordSelectComponentOption(GetFormatedMovieTitle(x), x.DownloadClientId)).ToList();
             var select = new DiscordSelectComponent($"MDS/{_interactionContext.User.Id}", LimitStringSize(Language.Current.DiscordCommandMovieRequestHelpDropdown), options);
 
             await _interactionContext.EditOriginalResponseAsync(new DiscordWebhookBuilder().AddComponents(select).WithContent(Language.Current.DiscordCommandMovieRequestHelp));
@@ -203,11 +203,17 @@ namespace Requestrr.WebApi.RequestrrBot.ChatClients.Discord
 
         public async Task DisplayMovieDeletionConfirmationAsync(Movie movie)
         {
-            var confirmButton = new DiscordButtonComponent(ButtonStyle.Danger, $"MDC/{_interactionContext.User.Id}/{movie.TheMovieDbId}", Language.Current.DiscordCommandDeleteButton);
+            var confirmButton = new DiscordButtonComponent(ButtonStyle.Danger, $"MDC/{_interactionContext.User.Id}/{movie.DownloadClientId}", Language.Current.DiscordCommandDeleteButton);
             var cancelButton = new DiscordButtonComponent(ButtonStyle.Secondary, $"MDX/{_interactionContext.User.Id}", Language.Current.DiscordCommandDeleteCancelButton);
 
             var builder = new DiscordWebhookBuilder().AddEmbed(await GenerateMovieDetailsAsync(movie, _movieSearcher)).AddComponents(confirmButton, cancelButton).WithContent(Language.Current.DiscordCommandDeleteMovieConfirm.ReplaceTokens(movie));
             await _interactionContext.EditOriginalResponseAsync(builder);
+        }
+
+
+        public async Task WarnMovieDeletionNoLongerValidAsync()
+        {
+            await _interactionContext.EditOriginalResponseAsync(new DiscordWebhookBuilder().WithContent(Language.Current.DiscordCommandDeleteApprovalExpired));
         }
 
 

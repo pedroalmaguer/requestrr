@@ -20,7 +20,7 @@ namespace Requestrr.WebApi.RequestrrBot.Movies
         {
             movieName = movieName.Replace(".", " ");
 
-            var movies = (await _deleter.GetLibraryMoviesAsync())
+            var movies = (await GetDeletableMoviesAsync())
                 .Where(x => x.Title.Contains(movieName, StringComparison.InvariantCultureIgnoreCase))
                 .OrderBy(x => x.Title.Length)
                 .ToArray();
@@ -39,9 +39,9 @@ namespace Requestrr.WebApi.RequestrrBot.Movies
             }
         }
 
-        public async Task HandleMovieSelectionAsync(int theMovieDbId)
+        public async Task HandleMovieSelectionAsync(string downloadClientId)
         {
-            var movie = await FindMovieForDeletionAsync(theMovieDbId);
+            var movie = await FindMovieForDeletionAsync(downloadClientId);
 
             if (movie != null)
             {
@@ -49,21 +49,21 @@ namespace Requestrr.WebApi.RequestrrBot.Movies
             }
         }
 
-        public async Task<Movie> FindMovieForDeletionAsync(int theMovieDbId)
+        public async Task<Movie> FindMovieForDeletionAsync(string downloadClientId)
         {
-            var movie = await FindMovieAsync(theMovieDbId);
+            var movie = await FindMovieAsync(downloadClientId);
 
             if (movie == null)
             {
-                await _userInterface.WarnNoMovieFoundByTheMovieDbIdAsync(theMovieDbId.ToString());
+                await _userInterface.WarnMovieDeletionNoLongerValidAsync();
             }
 
             return movie;
         }
 
-        public async Task<bool> DeleteMovieAsync(int theMovieDbId)
+        public async Task<bool> DeleteMovieAsync(string downloadClientId)
         {
-            var movie = await FindMovieAsync(theMovieDbId);
+            var movie = await FindMovieAsync(downloadClientId);
 
             if (movie == null)
             {
@@ -80,9 +80,15 @@ namespace Requestrr.WebApi.RequestrrBot.Movies
             return _userInterface.DisplayMovieDeletionCancelledAsync();
         }
 
-        private async Task<Movie> FindMovieAsync(int theMovieDbId)
+        //The download client id is the only unique key, TheMovieDb ids can repeat or be 0 for unmatched entries
+        private async Task<Movie> FindMovieAsync(string downloadClientId)
         {
-            return (await _deleter.GetLibraryMoviesAsync()).FirstOrDefault(x => x.TheMovieDbId == theMovieDbId.ToString());
+            return (await GetDeletableMoviesAsync()).FirstOrDefault(x => x.DownloadClientId == downloadClientId);
+        }
+
+        private async Task<Movie[]> GetDeletableMoviesAsync()
+        {
+            return (await _deleter.GetLibraryMoviesAsync()).Where(x => !string.IsNullOrWhiteSpace(x.DownloadClientId)).ToArray();
         }
     }
 }
