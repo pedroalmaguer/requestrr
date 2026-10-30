@@ -14,7 +14,7 @@ using static Requestrr.WebApi.RequestrrBot.DownloadClients.Sonarr.SonarrClient;
 
 namespace Requestrr.WebApi.RequestrrBot.DownloadClients.Sonarr
 {
-    public class SonarrClientV4 : ITvShowSearcher, ITvShowRequester, ITvShowDeleter
+    public class SonarrClientV4 : ITvShowSearcher, ITvShowRequester, ISonarrTvShowLibrary
     {
         private IHttpClientFactory _httpClientFactory;
         private readonly ILogger<SonarrClient> _logger;
