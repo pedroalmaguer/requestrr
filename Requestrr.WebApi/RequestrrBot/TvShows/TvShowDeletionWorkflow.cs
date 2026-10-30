@@ -19,7 +19,7 @@ namespace Requestrr.WebApi.RequestrrBot.TvShows
         {
             tvShowName = tvShowName.Replace(".", " ");
 
-            var tvShows = (await _deleter.GetLibraryTvShowsAsync())
+            var tvShows = (await GetDeletableTvShowsAsync())
                 .Where(x => x.Title.Contains(tvShowName, StringComparison.InvariantCultureIgnoreCase))
                 .OrderBy(x => x.Title.Length)
                 .ToArray();
@@ -38,9 +38,9 @@ namespace Requestrr.WebApi.RequestrrBot.TvShows
             }
         }
 
-        public async Task HandleTvShowSelectionAsync(int theTvDbId)
+        public async Task HandleTvShowSelectionAsync(string downloadClientId)
         {
-            var tvShow = await FindTvShowForDeletionAsync(theTvDbId);
+            var tvShow = await FindTvShowForDeletionAsync(downloadClientId);
 
             if (tvShow != null)
             {
@@ -48,21 +48,21 @@ namespace Requestrr.WebApi.RequestrrBot.TvShows
             }
         }
 
-        public async Task<TvShow> FindTvShowForDeletionAsync(int theTvDbId)
+        public async Task<TvShow> FindTvShowForDeletionAsync(string downloadClientId)
         {
-            var tvShow = await FindTvShowAsync(theTvDbId);
+            var tvShow = await FindTvShowAsync(downloadClientId);
 
             if (tvShow == null)
             {
-                await _userInterface.WarnNoTvShowFoundByTvDbIdAsync(theTvDbId);
+                await _userInterface.WarnTvShowDeletionNoLongerValidAsync();
             }
 
             return tvShow;
         }
 
-        public async Task<bool> DeleteTvShowAsync(int theTvDbId)
+        public async Task<bool> DeleteTvShowAsync(string downloadClientId)
         {
-            var tvShow = await FindTvShowAsync(theTvDbId);
+            var tvShow = await FindTvShowAsync(downloadClientId);
 
             if (tvShow == null)
             {
@@ -79,9 +79,15 @@ namespace Requestrr.WebApi.RequestrrBot.TvShows
             return _userInterface.DisplayTvShowDeletionCancelledAsync();
         }
 
-        private async Task<TvShow> FindTvShowAsync(int theTvDbId)
+        //The download client id is the only unique key, TheTvDb ids can repeat
+        private async Task<TvShow> FindTvShowAsync(string downloadClientId)
         {
-            return (await _deleter.GetLibraryTvShowsAsync()).FirstOrDefault(x => x.TheTvDbId == theTvDbId);
+            return (await GetDeletableTvShowsAsync()).FirstOrDefault(x => x.DownloadClientId == downloadClientId);
+        }
+
+        private async Task<TvShow[]> GetDeletableTvShowsAsync()
+        {
+            return (await _deleter.GetLibraryTvShowsAsync()).Where(x => !string.IsNullOrWhiteSpace(x.DownloadClientId)).ToArray();
         }
     }
 }

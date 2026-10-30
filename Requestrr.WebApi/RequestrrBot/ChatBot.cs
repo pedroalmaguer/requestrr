@@ -530,17 +530,17 @@ namespace Requestrr.WebApi.RequestrrBot
             {
                 if (e.Values != null && e.Values.Any())
                 {
-                    await workflow.HandleMovieSelectionAsync(int.Parse(e.Values.Single()));
+                    await workflow.HandleMovieSelectionAsync(e.Values.Single());
                 }
             }
             else if (e.Id.ToLower().StartsWith("mdc"))
             {
-                var theMovieDbId = int.Parse(e.Id.Split("/").Last());
-                var movie = await workflow.FindMovieForDeletionAsync(theMovieDbId);
+                var downloadClientId = e.Id.Split("/").Last();
+                var movie = await workflow.FindMovieForDeletionAsync(downloadClientId);
 
                 if (movie != null)
                 {
-                    await _deletionApprovals.RequestApprovalAsync(e, _discordSettingsProvider.Provide(), DeletionMediaType.Movie, theMovieDbId, movie.Title, await DiscordMovieUserInterface.GenerateMovieDetailsAsync(movie));
+                    await _deletionApprovals.RequestApprovalAsync(e, _client, _discordSettingsProvider.Provide(), DeletionMediaType.Movie, downloadClientId, movie.Title, await DiscordMovieUserInterface.GenerateMovieDetailsAsync(movie));
                 }
             }
             else if (e.Id.ToLower().StartsWith("mdx"))
@@ -563,17 +563,17 @@ namespace Requestrr.WebApi.RequestrrBot
             {
                 if (e.Values != null && e.Values.Any())
                 {
-                    await workflow.HandleTvShowSelectionAsync(int.Parse(e.Values.Single()));
+                    await workflow.HandleTvShowSelectionAsync(e.Values.Single());
                 }
             }
             else if (e.Id.ToLower().StartsWith("tdc"))
             {
-                var theTvDbId = int.Parse(e.Id.Split("/").Last());
-                var tvShow = await workflow.FindTvShowForDeletionAsync(theTvDbId);
+                var downloadClientId = e.Id.Split("/").Last();
+                var tvShow = await workflow.FindTvShowForDeletionAsync(downloadClientId);
 
                 if (tvShow != null)
                 {
-                    await _deletionApprovals.RequestApprovalAsync(e, _discordSettingsProvider.Provide(), DeletionMediaType.TvShow, theTvDbId, tvShow.Title, DiscordTvShowUserInterface.GenerateTvShowDetailsAsync(tvShow));
+                    await _deletionApprovals.RequestApprovalAsync(e, _client, _discordSettingsProvider.Provide(), DeletionMediaType.TvShow, downloadClientId, tvShow.Title, DiscordTvShowUserInterface.GenerateTvShowDetailsAsync(tvShow));
                 }
             }
             else if (e.Id.ToLower().StartsWith("tdx"))
@@ -583,7 +583,7 @@ namespace Requestrr.WebApi.RequestrrBot
         }
 
 
-        private Task<bool> DeleteApprovedMediaAsync(DeletionMediaType mediaType, int mediaId, DiscordInteraction interaction)
+        private Task<bool> DeleteApprovedMediaAsync(DeletionMediaType mediaType, string mediaId, DiscordInteraction interaction)
         {
             return mediaType == DeletionMediaType.Movie
                 ? _movieWorkflowFactory.CreateDeletionWorkflow(interaction).DeleteMovieAsync(mediaId)
