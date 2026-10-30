@@ -7,7 +7,7 @@ using Requestrr.WebApi.RequestrrBot.TvShows;
 
 namespace Requestrr.WebApi.RequestrrBot.DownloadClients.Sonarr
 {
-    public class SonarrClient : ITvShowSearcher, ITvShowRequester
+    public class SonarrClient : ITvShowSearcher, ITvShowRequester, ITvShowDeleter
     {
         private IHttpClientFactory _httpClientFactory;
         private readonly ILogger<SonarrClient> _logger;
@@ -133,6 +133,16 @@ namespace Requestrr.WebApi.RequestrrBot.DownloadClients.Sonarr
         public Task<TvShowRequestResult> RequestTvShowAsync(TvShowRequest request, TvShow tvShow, TvSeason season)
         {
             return CreateInstance<ITvShowRequester>().RequestTvShowAsync(request, tvShow, season);
+        }
+
+        public Task<IReadOnlyList<TvShow>> GetLibraryTvShowsAsync()
+        {
+            return CreateInstance<ITvShowDeleter>().GetLibraryTvShowsAsync();
+        }
+
+        public Task DeleteTvShowAsync(TvShow tvShow)
+        {
+            return CreateInstance<ITvShowDeleter>().DeleteTvShowAsync(tvShow);
         }
 
         private T CreateInstance<T>() where T : class

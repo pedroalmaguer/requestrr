@@ -14,7 +14,7 @@ using static Requestrr.WebApi.RequestrrBot.DownloadClients.Sonarr.SonarrClient;
 
 namespace Requestrr.WebApi.RequestrrBot.DownloadClients.Sonarr
 {
-    public class SonarrClientV4 : ITvShowSearcher, ITvShowRequester
+    public class SonarrClientV4 : ITvShowSearcher, ITvShowRequester, ITvShowDeleter
     {
         private IHttpClientFactory _httpClientFactory;
         private readonly ILogger<SonarrClient> _logger;
@@ -260,6 +260,52 @@ namespace Requestrr.WebApi.RequestrrBot.DownloadClients.Sonarr
             }
 
             throw new System.Exception("An error occurred while searching available tv shows with Sonarr");
+        }
+
+        public async Task<IReadOnlyList<TvShow>> GetLibraryTvShowsAsync()
+        {
+            try
+            {
+                var response = await HttpGetAsync($"{BaseURL}/series");
+                await response.ThrowIfNotSuccessfulAsync("SonarrSeriesGetAll failed", x => x.error);
+
+                var jsonResponse = await response.Content.ReadAsStringAsync();
+                var jsonTvShows = JsonConvert.DeserializeObject<List<JSONTvShow>>(jsonResponse).Where(x => x.tvdbId.HasValue).ToArray();
+
+                return jsonTvShows.Select(x => new TvShow
+                {
+                    TheTvDbId = x.tvdbId.Value,
+                    DownloadClientId = x.id?.ToString(),
+                    Title = x.title,
+                    Overview = x.overview,
+                    Status = x.status,
+                    FirstAired = x.year > 0 ? x.year.ToString() : string.Empty,
+                    Banner = GetPosterImageUrl(x.images),
+                    Seasons = Array.Empty<TvSeason>()
+                }).ToArray();
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while getting the tv show library from Sonarr: " + ex.Message);
+            }
+
+            throw new System.Exception("An error occurred while getting the tv show library from Sonarr");
+        }
+
+        public async Task DeleteTvShowAsync(TvShow tvShow)
+        {
+            try
+            {
+                var response = await HttpDeleteAsync($"{BaseURL}/series/{tvShow.DownloadClientId}?deleteFiles=true");
+                await response.ThrowIfNotSuccessfulAsync("SonarrDeleteSeries failed", x => x.error);
+                return;
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, $"An error occurred while deleting tv show \"{tvShow.Title}\" from Sonarr: " + ex.Message);
+            }
+
+            throw new System.Exception("An error occurred while deleting a tv show from Sonarr");
         }
 
         public async Task<TvShowRequestResult> RequestTvShowAsync(TvShowRequest request, TvShow tvShow, TvSeason season)
@@ -621,6 +667,16 @@ namespace Requestrr.WebApi.RequestrrBot.DownloadClients.Sonarr
             }
 
             return false;
+        }
+
+        private async Task<HttpResponseMessage> HttpDeleteAsync(string url)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Delete, url);
+            request.Headers.Add("Accept", "application/json");
+            request.Headers.Add("X-Api-Key", SonarrSettings.ApiKey);
+
+            var client = _httpClientFactory.CreateClient();
+            return await client.SendAsync(request);
         }
 
         private static string GetBaseURL(SonarrSettings settings)

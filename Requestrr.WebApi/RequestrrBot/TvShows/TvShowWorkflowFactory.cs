@@ -79,6 +79,19 @@ namespace Requestrr.WebApi.RequestrrBot.TvShows
         }
         
 
+        public TvShowDeletionWorkflow CreateDeletionWorkflow(DiscordInteraction interaction)
+        {
+            var settings = _settingsProvider.Provide();
+            var deleter = GetTvShowClient<ITvShowDeleter>(settings);
+
+            if (deleter == null)
+            {
+                throw new Exception($"Tv show download client {settings.TvShowDownloadClient} does not support deletion");
+            }
+
+            return new TvShowDeletionWorkflow(deleter, new DiscordTvShowUserInterface(interaction));
+        }
+
         public ITvShowNotificationWorkflow CreateNotificationWorkflow(DiscordInteraction interaction)
         {
             var settings = _settingsProvider.Provide();

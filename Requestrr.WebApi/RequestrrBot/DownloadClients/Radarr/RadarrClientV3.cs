@@ -14,7 +14,7 @@ using static Requestrr.WebApi.RequestrrBot.DownloadClients.Radarr.RadarrClient;
 
 namespace Requestrr.WebApi.RequestrrBot.DownloadClients.Radarr
 {
-    public class RadarrClientV3 : IMovieRequester, IMovieSearcher
+    public class RadarrClientV3 : IMovieRequester, IMovieSearcher, IMovieDeleter
     {
         private IHttpClientFactory _httpClientFactory;
         private readonly ILogger<RadarrClient> _logger;
@@ -243,6 +243,41 @@ namespace Requestrr.WebApi.RequestrrBot.DownloadClients.Radarr
             throw new System.Exception("An error occurred while requesting a movie from Radarr");
         }
 
+        public async Task<IReadOnlyList<Movie>> GetLibraryMoviesAsync()
+        {
+            try
+            {
+                var response = await HttpGetAsync($"{BaseURL}/movie");
+                await response.ThrowIfNotSuccessfulAsync("RadarrGetAllMovies failed", x => x.error);
+
+                var jsonResponse = await response.Content.ReadAsStringAsync();
+
+                return JsonConvert.DeserializeObject<List<JSONMovie>>(jsonResponse).Select(x => Convert(x)).ToArray();
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while getting the movie library from Radarr: " + ex.Message);
+            }
+
+            throw new System.Exception("An error occurred while getting the movie library from Radarr");
+        }
+
+        public async Task DeleteMovieAsync(Movie movie)
+        {
+            try
+            {
+                var response = await HttpDeleteAsync($"{BaseURL}/movie/{movie.DownloadClientId}?deleteFiles=true");
+                await response.ThrowIfNotSuccessfulAsync("RadarrDeleteMovie failed", x => x.error);
+                return;
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, $"An error occurred while deleting movie \"{movie.Title}\" from Radarr: " + ex.Message);
+            }
+
+            throw new System.Exception("An error occurred while deleting a movie from Radarr");
+        }
+
         private async Task CreateMovieInRadarr(MovieRequest request, Movie movie)
         {
             RadarrCategory category = null;
@@ -450,6 +485,16 @@ namespace Requestrr.WebApi.RequestrrBot.DownloadClients.Radarr
 
             var client = _httpClientFactory.CreateClient();
             return await client.PutAsync(url, putRequest);
+        }
+
+        private async Task<HttpResponseMessage> HttpDeleteAsync(string url)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Delete, url);
+            request.Headers.Add("Accept", "application/json");
+            request.Headers.Add("X-Api-Key", RadarrSettings.ApiKey);
+
+            var client = _httpClientFactory.CreateClient();
+            return await client.SendAsync(request);
         }
 
         private static string GetBaseURL(RadarrSettings settings)

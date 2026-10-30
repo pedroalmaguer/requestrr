@@ -31,6 +31,7 @@ namespace Requestrr.WebApi.RequestrrBot.ChatClients.Discord
                 TvShowRoles = settings.ChatClients.Discord.TvShowRoles.ToObject<string[]>(),
                 MovieRoles = settings.ChatClients.Discord.MovieRoles.ToObject<string[]>(),
                 MusicRoles = settings.ChatClients.Discord.MusicRoles.ToObject<string[]>(),
+                DeleteApprovalRoles = settings.ChatClients.Discord.DeleteApprovalRoles.ToObject<string[]>(),
                 ClientID = settings.ChatClients.Discord.ClientId,
                 EnableRequestsThroughDirectMessages = settings.ChatClients.Discord.EnableRequestsThroughDirectMessages,
                 AutomaticallyNotifyRequesters = settings.ChatClients.Discord.AutomaticallyNotifyRequesters,

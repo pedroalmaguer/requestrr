@@ -298,6 +298,14 @@ namespace Requestrr.WebApi
                 ((JObject)settingsJson.ChatClients.Discord).Add("MusicRoles", JToken.FromObject(new List<string>()));
                 File.WriteAllText(settingsFilePath, JsonConvert.SerializeObject(settingsJson));
             }
+
+            if (settingsJson.Version.ToString().Equals("2.1.3", StringComparison.InvariantCultureIgnoreCase))
+            {
+                settingsJson.Version = "2.1.4";
+
+                ((JObject)settingsJson.ChatClients.Discord).Add("DeleteApprovalRoles", JToken.FromObject(new List<string>()));
+                File.WriteAllText(settingsFilePath, JsonConvert.SerializeObject(settingsJson));
+            }
         }
     }
 }

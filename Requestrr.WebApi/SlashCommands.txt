@@ -280,5 +280,69 @@ namespace Requestrr.WebApi.RequestrrBot
             [ISSUE_TV_COMMAND_END]
         }
         [ISSUE_COMMAND_END]
+
+
+        [DELETE_COMMAND_START]
+        [SlashCommandGroup("[DELETE_GROUP_NAME]", "[DELETE_GROUP_DESCRIPTION]")]
+        public class DeleteGroup : ApplicationCommandModule
+        {
+            private readonly IServiceProvider _serviceProvider;
+            private readonly ILogger _logger;
+
+            public DeleteGroup(IServiceProvider serviceProvider)
+            {
+                _serviceProvider = serviceProvider;
+                _logger = _serviceProvider.Get<ILogger>();
+            }
+
+
+            [DELETE_MOVIE_COMMAND_START]
+            [SlashCommand("[DELETE_MOVIE_NAME]", "[DELETE_MOVIE_DESCRIPTION]")]
+            [DSharpPlus.SlashCommands.Attributes.SlashRequireGuild]
+            [RequireRoles(new ulong[] { [REQUIRED_MOVIE_ROLE_IDS] })]
+            [RequireChannels(new ulong[] { [REQUIRED_CHANNEL_IDS] })]
+            public async Task DeleteMovieByTitle(InteractionContext ctx, [Option("[DELETE_MOVIE_OPTION_NAME]", "[DELETE_MOVIE_OPTION_DESCRIPTION]")] string movieTitle)
+            {
+                try
+                {
+                    var settings = _serviceProvider.Get<DiscordSettingsProvider>().Provide();
+                    await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().AsEphemeral(settings.AutomaticallyPurgeCommandMessages).WithContent(Language.Current.DiscordCommandSending));
+
+                    var workFlow = _serviceProvider.Get<MovieWorkflowFactory>().CreateDeletionWorkflow(ctx.Interaction);
+                    await workFlow.SearchMovieAsync(movieTitle.Trim());
+                }
+                catch (System.Exception ex)
+                {
+                    _logger.LogError(ex, $"Error while searching movies to delete with title {movieTitle} : " + ex.Message);
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent(Language.Current.Error));
+                }
+            }
+            [DELETE_MOVIE_COMMAND_END]
+
+
+            [DELETE_TV_COMMAND_START]
+            [SlashCommand("[DELETE_TV_NAME]", "[DELETE_TV_DESCRIPTION]")]
+            [DSharpPlus.SlashCommands.Attributes.SlashRequireGuild]
+            [RequireRoles(new ulong[] { [REQUIRED_TV_ROLE_IDS] })]
+            [RequireChannels(new ulong[] { [REQUIRED_CHANNEL_IDS] })]
+            public async Task DeleteTvShowByTitle(InteractionContext ctx, [Option("[DELETE_TV_OPTION_NAME]", "[DELETE_TV_OPTION_DESCRIPTION]")] string tvShowTitle)
+            {
+                try
+                {
+                    var settings = _serviceProvider.Get<DiscordSettingsProvider>().Provide();
+                    await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().AsEphemeral(settings.AutomaticallyPurgeCommandMessages).WithContent(Language.Current.DiscordCommandSending));
+
+                    var workFlow = _serviceProvider.Get<TvShowWorkflowFactory>().CreateDeletionWorkflow(ctx.Interaction);
+                    await workFlow.SearchTvShowAsync(tvShowTitle.Trim());
+                }
+                catch (System.Exception ex)
+                {
+                    _logger.LogError(ex, $"Error while searching tv shows to delete with title {tvShowTitle} : " + ex.Message);
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent(Language.Current.Error));
+                }
+            }
+            [DELETE_TV_COMMAND_END]
+        }
+        [DELETE_COMMAND_END]
     }
 }

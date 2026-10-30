@@ -17,6 +17,8 @@ namespace Requestrr.WebApi.RequestrrBot.Locale
         public static string IssueLabel = "[Issue]";
         public static string IssueTitle = "[Title]";
         public static string IssueUsername = "[Username]";
+        public static string DeletionTitle = "[Title]";
+        public static string DeletionUsername = "[Username]";
 
         public static string FullCommandList = "[FullCommandList]";
 
@@ -447,6 +449,58 @@ namespace Requestrr.WebApi.RequestrrBot.Locale
         public string DiscordCommandTvIssueTvdbOptionDescription { get; set; }
 
 
+
+
+        [JsonProperty("Discord.Command.Delete.Name")]
+        public string DiscordCommandDeleteName { get; set; }
+        [JsonProperty("Discord.Command.Delete.Description")]
+        public string DiscordCommandDeleteDescription { get; set; }
+        [JsonProperty("Discord.Command.Delete.Movie.Name")]
+        public string DiscordCommandDeleteMovieName { get; set; }
+        [JsonProperty("Discord.Command.Delete.Movie.Description")]
+        public string DiscordCommandDeleteMovieDescription { get; set; }
+        [JsonProperty("Discord.Command.Delete.Movie.Option.Name")]
+        public string DiscordCommandDeleteMovieOptionName { get; set; }
+        [JsonProperty("Discord.Command.Delete.Movie.Option.Description")]
+        public string DiscordCommandDeleteMovieOptionDescription { get; set; }
+        [JsonProperty("Discord.Command.Delete.Movie.Confirm")]
+        public string DiscordCommandDeleteMovieConfirm { get; set; }
+        [JsonProperty("Discord.Command.Delete.Tv.Name")]
+        public string DiscordCommandDeleteTvName { get; set; }
+        [JsonProperty("Discord.Command.Delete.Tv.Description")]
+        public string DiscordCommandDeleteTvDescription { get; set; }
+        [JsonProperty("Discord.Command.Delete.Tv.Option.Name")]
+        public string DiscordCommandDeleteTvOptionName { get; set; }
+        [JsonProperty("Discord.Command.Delete.Tv.Option.Description")]
+        public string DiscordCommandDeleteTvOptionDescription { get; set; }
+        [JsonProperty("Discord.Command.Delete.Tv.Confirm")]
+        public string DiscordCommandDeleteTvConfirm { get; set; }
+        [JsonProperty("Discord.Command.Delete.Button")]
+        public string DiscordCommandDeleteButton { get; set; }
+        [JsonProperty("Discord.Command.Delete.Cancel.Button")]
+        public string DiscordCommandDeleteCancelButton { get; set; }
+        [JsonProperty("Discord.Command.Delete.Cancelled")]
+        public string DiscordCommandDeleteCancelled { get; set; }
+        [JsonProperty("Discord.Command.Delete.Approval.Sent")]
+        public string DiscordCommandDeleteApprovalSent { get; set; }
+        [JsonProperty("Discord.Command.Delete.Approval.NoApprovers")]
+        public string DiscordCommandDeleteApprovalNoApprovers { get; set; }
+        [JsonProperty("Discord.Command.Delete.Approval.Request")]
+        public string DiscordCommandDeleteApprovalRequest { get; set; }
+        [JsonProperty("Discord.Command.Delete.Approval.Approve.Button")]
+        public string DiscordCommandDeleteApprovalApproveButton { get; set; }
+        [JsonProperty("Discord.Command.Delete.Approval.Deny.Button")]
+        public string DiscordCommandDeleteApprovalDenyButton { get; set; }
+        [JsonProperty("Discord.Command.Delete.Approval.Approved")]
+        public string DiscordCommandDeleteApprovalApproved { get; set; }
+        [JsonProperty("Discord.Command.Delete.Approval.Denied")]
+        public string DiscordCommandDeleteApprovalDenied { get; set; }
+        [JsonProperty("Discord.Command.Delete.Approval.Failed")]
+        public string DiscordCommandDeleteApprovalFailed { get; set; }
+        [JsonProperty("Discord.Command.Delete.Approval.Expired")]
+        public string DiscordCommandDeleteApprovalExpired { get; set; }
+        [JsonProperty("Discord.Command.Delete.Approval.NotApprover")]
+        public string DiscordCommandDeleteApprovalNotApprover { get; set; }
 
 
         [JsonProperty("Discord.Command.Music.Request.Artist.Description")]
