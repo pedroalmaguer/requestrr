@@ -14,7 +14,7 @@ using static Requestrr.WebApi.RequestrrBot.DownloadClients.Radarr.RadarrClient;
 
 namespace Requestrr.WebApi.RequestrrBot.DownloadClients.Radarr
 {
-    public class RadarrClientV2 : IMovieRequester, IMovieSearcher, IMovieDeleter
+    public class RadarrClientV2 : IMovieRequester, IMovieSearcher, IRadarrMovieLibrary
     {
         private IHttpClientFactory _httpClientFactory;
         private readonly ILogger<RadarrClient> _logger;

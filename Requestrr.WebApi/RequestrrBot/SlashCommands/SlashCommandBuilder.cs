@@ -359,7 +359,7 @@ namespace Requestrr.WebApi.RequestrrBot
                 code = code.Replace("[ISSUE_TVDB_COMMAND_END]", string.Empty);
             }
 
-            //Deleting talks directly to the download client, so it is only available with Radarr and Sonarr, and requires someone who can approve it
+            //Deleting is only available with clients that can remove media from disk (Radarr, Sonarr and Seerr), and requires someone who can approve it
             code = code.Replace("[DELETE_GROUP_NAME]", Language.Current.DiscordCommandDeleteName);
             code = code.Replace("[DELETE_GROUP_DESCRIPTION]", Language.Current.DiscordCommandDeleteDescription);
 
@@ -373,7 +373,10 @@ namespace Requestrr.WebApi.RequestrrBot
             code = code.Replace("[DELETE_TV_OPTION_NAME]", Language.Current.DiscordCommandDeleteTvOptionName);
             code = code.Replace("[DELETE_TV_OPTION_DESCRIPTION]", Language.Current.DiscordCommandDeleteTvOptionDescription);
 
-            if (!settings.DeleteApprovalRoles.Any() || (settings.MovieDownloadClient != DownloadClient.Radarr && settings.TvShowDownloadClient != DownloadClient.Sonarr))
+            var canDeleteMovies = settings.MovieDownloadClient == DownloadClient.Radarr || settings.MovieDownloadClient == DownloadClient.Overseerr;
+            var canDeleteTvShows = settings.TvShowDownloadClient == DownloadClient.Sonarr || settings.TvShowDownloadClient == DownloadClient.Overseerr;
+
+            if (!settings.DeleteApprovalRoles.Any() || (!canDeleteMovies && !canDeleteTvShows))
             {
                 int beginIndex = code.IndexOf("[DELETE_COMMAND_START]");
                 int endIndex = code.IndexOf("[DELETE_COMMAND_END]") + "[DELETE_COMMAND_END]".Length;
@@ -382,7 +385,7 @@ namespace Requestrr.WebApi.RequestrrBot
             }
             else
             {
-                if (settings.MovieDownloadClient == DownloadClient.Radarr)
+                if (canDeleteMovies)
                 {
                     _commandList[CommandType.Misc].Add($"{Language.Current.DiscordCommandDeleteName} {Language.Current.DiscordCommandDeleteMovieName}");
                 }
@@ -394,7 +397,7 @@ namespace Requestrr.WebApi.RequestrrBot
                     code = code.Replace(code.Substring(beginIndex, endIndex - beginIndex), string.Empty);
                 }
 
-                if (settings.TvShowDownloadClient == DownloadClient.Sonarr)
+                if (canDeleteTvShows)
                 {
                     _commandList[CommandType.Misc].Add($"{Language.Current.DiscordCommandDeleteName} {Language.Current.DiscordCommandDeleteTvName}");
                 }

@@ -20,8 +20,7 @@ namespace Requestrr.WebApi.RequestrrBot.Movies
         {
             movieName = movieName.Replace(".", " ");
 
-            var movies = (await GetDeletableMoviesAsync())
-                .Where(x => x.Title.Contains(movieName, StringComparison.InvariantCultureIgnoreCase))
+            var movies = (await _deleter.SearchLibraryMoviesAsync(movieName))
                 .OrderBy(x => x.Title.Length)
                 .ToArray();
 
@@ -80,15 +79,9 @@ namespace Requestrr.WebApi.RequestrrBot.Movies
             return _userInterface.DisplayMovieDeletionCancelledAsync();
         }
 
-        //The download client id is the only unique key, TheMovieDb ids can repeat or be 0 for unmatched entries
-        private async Task<Movie> FindMovieAsync(string downloadClientId)
+        private Task<Movie> FindMovieAsync(string downloadClientId)
         {
-            return (await GetDeletableMoviesAsync()).FirstOrDefault(x => x.DownloadClientId == downloadClientId);
-        }
-
-        private async Task<Movie[]> GetDeletableMoviesAsync()
-        {
-            return (await _deleter.GetLibraryMoviesAsync()).Where(x => !string.IsNullOrWhiteSpace(x.DownloadClientId)).ToArray();
+            return _deleter.GetLibraryMovieAsync(downloadClientId);
         }
     }
 }

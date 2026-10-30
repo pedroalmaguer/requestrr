@@ -16,7 +16,7 @@ using Requestrr.WebApi.RequestrrBot.TvShows;
 
 namespace Requestrr.WebApi.RequestrrBot.DownloadClients.Overseerr
 {
-    public class OverseerrClient : IMovieRequester, IMovieSearcher, ITvShowSearcher, ITvShowRequester, IMovieIssueSearcher, IMovieIssueRequester, ITvShowIssueSearcher, ITvShowIssueRequester
+    public class OverseerrClient : IMovieRequester, IMovieSearcher, ITvShowSearcher, ITvShowRequester, IMovieIssueSearcher, IMovieIssueRequester, ITvShowIssueSearcher, ITvShowIssueRequester, IMovieDeleter, ITvShowDeleter
     {
         private IHttpClientFactory _httpClientFactory;
         private readonly ILogger<OverseerrClient> _logger;
@@ -867,6 +867,126 @@ namespace Requestrr.WebApi.RequestrrBot.DownloadClients.Overseerr
 
 
 
+        //Deletion goes through Seerr's "delete media file" endpoint, which removes the media and its files from Radarr/Sonarr.
+        //Seerr keeps a single media entry per TheMovieDb id, so that id is used as the download client id.
+        public async Task<IReadOnlyList<Movie>> SearchLibraryMoviesAsync(string movieName)
+        {
+            return (await SearchDeletableMediaAsync(movieName, MediaTypes.MOVIE)).Select(ConvertDeletableMovie).ToArray();
+        }
+
+        public async Task<Movie> GetLibraryMovieAsync(string downloadClientId)
+        {
+            var movie = await GetDeletableMediaAsync($"movie/{int.Parse(downloadClientId)}");
+            return movie != null ? ConvertDeletableMovie(movie) : null;
+        }
+
+        public Task DeleteMovieAsync(Movie movie)
+        {
+            return DeleteMediaFilesAsync($"movie/{int.Parse(movie.DownloadClientId)}", movie.Title);
+        }
+
+        public async Task<IReadOnlyList<TvShow>> SearchLibraryTvShowsAsync(string tvShowName)
+        {
+            return (await SearchDeletableMediaAsync(tvShowName, MediaTypes.TV)).Select(ConvertDeletableTvShow).ToArray();
+        }
+
+        public async Task<TvShow> GetLibraryTvShowAsync(string downloadClientId)
+        {
+            var tvShow = await GetDeletableMediaAsync($"tv/{int.Parse(downloadClientId)}");
+            return tvShow != null ? ConvertDeletableTvShow(tvShow) : null;
+        }
+
+        public Task DeleteTvShowAsync(TvShow tvShow)
+        {
+            return DeleteMediaFilesAsync($"tv/{int.Parse(tvShow.DownloadClientId)}", tvShow.Title);
+        }
+
+        private async Task<JSONMedia[]> SearchDeletableMediaAsync(string name, MediaTypes mediaType)
+        {
+            try
+            {
+                var response = await HttpGetAsync($"{BaseURL}search/?query={Uri.EscapeDataString(name)}&page=1&language=en");
+                await response.ThrowIfNotSuccessfulAsync("OverseerrDeletionSearch failed", x => x.error);
+
+                var jsonResponse = await response.Content.ReadAsStringAsync();
+
+                return JsonConvert.DeserializeObject<JSONSearchResult>(jsonResponse).Results
+                    .Where(x => x.MediaType == mediaType && IsDeletable(x.MediaInfo))
+                    .ToArray();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while searching for media to delete from Overseerr: " + ex.Message);
+                throw new Exception("An error occurred while searching for media to delete from Overseerr: " + ex.Message);
+            }
+        }
+
+        //Always reads the current state, the media may have changed since the request for its deletion was made
+        private async Task<JSONMedia> GetDeletableMediaAsync(string path)
+        {
+            var response = await HttpGetAsync($"{BaseURL}{path}");
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+
+            await response.ThrowIfNotSuccessfulAsync("OverseerrGetMediaForDeletion failed", x => x.error);
+
+            var media = JsonConvert.DeserializeObject<JSONMedia>(await response.Content.ReadAsStringAsync());
+            return IsDeletable(media.MediaInfo) ? media : null;
+        }
+
+        private async Task DeleteMediaFilesAsync(string path, string title)
+        {
+            var media = await GetDeletableMediaAsync(path);
+
+            if (media == null)
+            {
+                throw new Exception($"\"{title}\" is no longer in the library");
+            }
+
+            //A media can be in the regular and in the 4K Radarr/Sonarr, remove it from each one that has it
+            foreach (var is4k in new[] { false, true }.Where(x => IsInDownloadClient(x ? media.MediaInfo.Status4k : media.MediaInfo.Status)))
+            {
+                var response = await HttpDeleteAsync($"{BaseURL}media/{media.MediaInfo.Id}/file?is4k={is4k.ToString().ToLower()}");
+                await response.ThrowIfNotSuccessfulAsync("OverseerrDeleteMediaFile failed", x => x.message);
+            }
+        }
+
+        private static bool IsDeletable(MediaInfo mediaInfo)
+        {
+            return mediaInfo != null && (IsInDownloadClient(mediaInfo.Status) || IsInDownloadClient(mediaInfo.Status4k));
+        }
+
+        private static bool IsInDownloadClient(MediaStatus? status)
+        {
+            return status == MediaStatus.PROCESSING || status == MediaStatus.PARTIALLY_AVAILABLE || status == MediaStatus.AVAILABLE;
+        }
+
+        private Movie ConvertDeletableMovie(JSONMedia jsonMedia)
+        {
+            var movie = ConvertMovie(jsonMedia, jsonMedia.MediaInfo.Status);
+            movie.DownloadClientId = jsonMedia.Id.ToString();
+
+            return movie;
+        }
+
+        private static TvShow ConvertDeletableTvShow(JSONMedia jsonMedia)
+        {
+            return new TvShow
+            {
+                DownloadClientId = jsonMedia.Id.ToString(),
+                Title = jsonMedia.Name,
+                Overview = jsonMedia.Overview,
+                FirstAired = jsonMedia.FirstAirDate,
+                Banner = !string.IsNullOrWhiteSpace(jsonMedia.PosterPath) ? $"https://image.tmdb.org/t/p/w500{jsonMedia.PosterPath}" : null,
+                Network = jsonMedia.Networks?.FirstOrDefault()?.Name,
+                Seasons = Array.Empty<TvSeason>(),
+            };
+        }
+
+
         private async Task<bool> FindLinkedOverseerUserAsync(string userId)
         {
             if (_requesterIdToOverseerUserID.TryGetValue(userId, out var overseerrUserID))
@@ -1113,6 +1233,16 @@ namespace Requestrr.WebApi.RequestrrBot.DownloadClients.Overseerr
 
             var client = _httpClientFactory.CreateClient();
             return await client.PutAsync(url, postRequest);
+        }
+
+        private async Task<HttpResponseMessage> HttpDeleteAsync(string url)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Delete, url);
+            request.Headers.Add("Accept", "application/json");
+            request.Headers.Add("X-Api-Key", OverseerrSettings.ApiKey);
+
+            var client = _httpClientFactory.CreateClient();
+            return await client.SendAsync(request);
         }
 
         private static string GetBaseURL(OverseerrTestSettings settings)

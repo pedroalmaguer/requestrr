@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -92,14 +94,25 @@ namespace Requestrr.WebApi.RequestrrBot.DownloadClients.Radarr
             return CreateInstance<IMovieRequester>().RequestMovieAsync(request, movie);
         }
 
-        public Task<IReadOnlyList<Movie>> GetLibraryMoviesAsync()
+        public async Task<IReadOnlyList<Movie>> SearchLibraryMoviesAsync(string movieName)
         {
-            return CreateInstance<IMovieDeleter>().GetLibraryMoviesAsync();
+            return (await GetDeletableMoviesAsync()).Where(x => x.Title.Contains(movieName, StringComparison.InvariantCultureIgnoreCase)).ToArray();
+        }
+
+        //The Radarr id is the only unique key, TheMovieDb ids can repeat or be 0 for unmatched entries
+        public async Task<Movie> GetLibraryMovieAsync(string downloadClientId)
+        {
+            return (await GetDeletableMoviesAsync()).FirstOrDefault(x => x.DownloadClientId == downloadClientId);
         }
 
         public Task DeleteMovieAsync(Movie movie)
         {
-            return CreateInstance<IMovieDeleter>().DeleteMovieAsync(movie);
+            return CreateInstance<IRadarrMovieLibrary>().DeleteMovieAsync(movie);
+        }
+
+        private async Task<Movie[]> GetDeletableMoviesAsync()
+        {
+            return (await CreateInstance<IRadarrMovieLibrary>().GetLibraryMoviesAsync()).Where(x => !string.IsNullOrWhiteSpace(x.DownloadClientId)).ToArray();
         }
 
         private T CreateInstance<T>() where T : class

@@ -19,8 +19,7 @@ namespace Requestrr.WebApi.RequestrrBot.TvShows
         {
             tvShowName = tvShowName.Replace(".", " ");
 
-            var tvShows = (await GetDeletableTvShowsAsync())
-                .Where(x => x.Title.Contains(tvShowName, StringComparison.InvariantCultureIgnoreCase))
+            var tvShows = (await _deleter.SearchLibraryTvShowsAsync(tvShowName))
                 .OrderBy(x => x.Title.Length)
                 .ToArray();
 
@@ -79,15 +78,9 @@ namespace Requestrr.WebApi.RequestrrBot.TvShows
             return _userInterface.DisplayTvShowDeletionCancelledAsync();
         }
 
-        //The download client id is the only unique key, TheTvDb ids can repeat
-        private async Task<TvShow> FindTvShowAsync(string downloadClientId)
+        private Task<TvShow> FindTvShowAsync(string downloadClientId)
         {
-            return (await GetDeletableTvShowsAsync()).FirstOrDefault(x => x.DownloadClientId == downloadClientId);
-        }
-
-        private async Task<TvShow[]> GetDeletableTvShowsAsync()
-        {
-            return (await _deleter.GetLibraryTvShowsAsync()).Where(x => !string.IsNullOrWhiteSpace(x.DownloadClientId)).ToArray();
+            return _deleter.GetLibraryTvShowAsync(downloadClientId);
         }
     }
 }

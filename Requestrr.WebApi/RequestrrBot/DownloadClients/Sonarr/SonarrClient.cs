@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -135,14 +137,25 @@ namespace Requestrr.WebApi.RequestrrBot.DownloadClients.Sonarr
             return CreateInstance<ITvShowRequester>().RequestTvShowAsync(request, tvShow, season);
         }
 
-        public Task<IReadOnlyList<TvShow>> GetLibraryTvShowsAsync()
+        public async Task<IReadOnlyList<TvShow>> SearchLibraryTvShowsAsync(string tvShowName)
         {
-            return CreateInstance<ITvShowDeleter>().GetLibraryTvShowsAsync();
+            return (await GetDeletableTvShowsAsync()).Where(x => x.Title.Contains(tvShowName, StringComparison.InvariantCultureIgnoreCase)).ToArray();
+        }
+
+        //The Sonarr id is the only unique key, TheTvDb ids can repeat
+        public async Task<TvShow> GetLibraryTvShowAsync(string downloadClientId)
+        {
+            return (await GetDeletableTvShowsAsync()).FirstOrDefault(x => x.DownloadClientId == downloadClientId);
         }
 
         public Task DeleteTvShowAsync(TvShow tvShow)
         {
-            return CreateInstance<ITvShowDeleter>().DeleteTvShowAsync(tvShow);
+            return CreateInstance<ISonarrTvShowLibrary>().DeleteTvShowAsync(tvShow);
+        }
+
+        private async Task<TvShow[]> GetDeletableTvShowsAsync()
+        {
+            return (await CreateInstance<ISonarrTvShowLibrary>().GetLibraryTvShowsAsync()).Where(x => !string.IsNullOrWhiteSpace(x.DownloadClientId)).ToArray();
         }
 
         private T CreateInstance<T>() where T : class
