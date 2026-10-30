@@ -67,6 +67,19 @@ namespace Requestrr.WebApi.RequestrrBot.Movies
                                                 CreateMovieNotificationWorkflow(interaction, settings));
         }
 
+        public MovieDeletionWorkflow CreateDeletionWorkflow(DiscordInteraction interaction)
+        {
+            var settings = _settingsProvider.Provide();
+            var deleter = GetMovieClient<IMovieDeleter>(settings);
+
+            if (deleter == null)
+            {
+                throw new Exception($"Movie download client {settings.MovieDownloadClient} does not support deletion");
+            }
+
+            return new MovieDeletionWorkflow(deleter, new DiscordMovieUserInterface(interaction, GetMovieClient<IMovieSearcher>(settings)));
+        }
+
         public IMovieNotificationWorkflow CreateNotificationWorkflow(DiscordInteraction interaction)
         {
             var settings = _settingsProvider.Provide();

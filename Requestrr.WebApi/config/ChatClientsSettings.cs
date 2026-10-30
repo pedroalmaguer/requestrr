@@ -14,6 +14,7 @@ namespace Requestrr.WebApi.config
         public string[] TvShowRoles { get; set; }
         public string[] MovieRoles { get; set; }
         public string[] MusicRoles { get; set; }
+        public string[] DeleteApprovalRoles { get; set; }
         public string[] MonitoredChannels { get; set; }
         public bool EnableRequestsThroughDirectMessages { get; set; }
         public bool AutomaticallyNotifyRequesters { get; set; }

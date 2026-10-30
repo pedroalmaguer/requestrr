@@ -68,6 +68,7 @@ function ChatClients(props) {
   const [tvShowRoles, setTvShowRoles] = useState([]);
   const [movieRoles, setMovieRoles] = useState([]);
   const [musicRoles, setMusicRoles] = useState([]);
+  const [deleteApprovalRoles, setDeleteApprovalRoles] = useState([]);
   const [automaticallyNotifyRequesters, setAutomaticallyNotifyRequesters] = useState(true);
   const [notificationMode, setNotificationMode] = useState("PrivateMessages");
   const [notificationChannels, setNotificationChannels] = useState([]);
@@ -91,6 +92,7 @@ function ChatClients(props) {
         setTvShowRoles(data.payload.tvShowRoles);
         setMovieRoles(data.payload.movieRoles);
         setMusicRoles(data.payload.musicRoles);
+        setDeleteApprovalRoles(data.payload.deleteApprovalRoles);
         setAutomaticallyNotifyRequesters(data.payload.automaticallyNotifyRequesters);
         setNotificationMode(data.payload.notificationMode);
         setNotificationChannels(data.payload.notificationChannels);
@@ -192,6 +194,7 @@ function ChatClients(props) {
           tvShowRoles: tvShowRoles,
           movieRoles: movieRoles,
           musicRoles: musicRoles,
+          deleteApprovalRoles: deleteApprovalRoles,
           enableRequestsThroughDirectMessages: enableRequestsThroughDirectMessages,
           automaticallyNotifyRequesters: automaticallyNotifyRequesters,
           notificationMode: notificationMode,
@@ -439,6 +442,23 @@ function ChatClients(props) {
                             selectedItems={musicRoles.map(x => { return { name: x, id: x } })}
                             items={musicRoles.map(x => { return { name: x, id: x } })}
                             onChange={newMusicRoles => setMusicRoles(newMusicRoles.filter(x => /\S/.test(x.id)).map(x => x.id.trim()))} />
+                        </FormGroup>
+                      </Col>
+                    </Row>
+                    <Row>
+                      <Col md="12">
+                        <FormGroup>
+                          <MultiDropdown
+                            name="Roles allowed to approve deletions"
+                            create={true}
+                            searchable={true}
+                            placeholder="Enter role ids here. Leave blank to disable the delete commands."
+                            labelField="name"
+                            valueField="id"
+                            dropdownHandle={false}
+                            selectedItems={deleteApprovalRoles.map(x => { return { name: x, id: x } })}
+                            items={deleteApprovalRoles.map(x => { return { name: x, id: x } })}
+                            onChange={newDeleteApprovalRoles => setDeleteApprovalRoles(newDeleteApprovalRoles.filter(x => /\S/.test(x.id)).map(x => x.id.trim()))} />
                         </FormGroup>
                       </Col>
                     </Row>

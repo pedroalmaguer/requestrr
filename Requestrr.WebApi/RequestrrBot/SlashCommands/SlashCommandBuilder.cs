@@ -359,6 +359,61 @@ namespace Requestrr.WebApi.RequestrrBot
                 code = code.Replace("[ISSUE_TVDB_COMMAND_END]", string.Empty);
             }
 
+            //Deleting talks directly to the download client, so it is only available with Radarr and Sonarr, and requires someone who can approve it
+            code = code.Replace("[DELETE_GROUP_NAME]", Language.Current.DiscordCommandDeleteName);
+            code = code.Replace("[DELETE_GROUP_DESCRIPTION]", Language.Current.DiscordCommandDeleteDescription);
+
+            code = code.Replace("[DELETE_MOVIE_NAME]", Language.Current.DiscordCommandDeleteMovieName);
+            code = code.Replace("[DELETE_MOVIE_DESCRIPTION]", Language.Current.DiscordCommandDeleteMovieDescription);
+            code = code.Replace("[DELETE_MOVIE_OPTION_NAME]", Language.Current.DiscordCommandDeleteMovieOptionName);
+            code = code.Replace("[DELETE_MOVIE_OPTION_DESCRIPTION]", Language.Current.DiscordCommandDeleteMovieOptionDescription);
+
+            code = code.Replace("[DELETE_TV_NAME]", Language.Current.DiscordCommandDeleteTvName);
+            code = code.Replace("[DELETE_TV_DESCRIPTION]", Language.Current.DiscordCommandDeleteTvDescription);
+            code = code.Replace("[DELETE_TV_OPTION_NAME]", Language.Current.DiscordCommandDeleteTvOptionName);
+            code = code.Replace("[DELETE_TV_OPTION_DESCRIPTION]", Language.Current.DiscordCommandDeleteTvOptionDescription);
+
+            if (!settings.DeleteApprovalRoles.Any() || (settings.MovieDownloadClient != DownloadClient.Radarr && settings.TvShowDownloadClient != DownloadClient.Sonarr))
+            {
+                int beginIndex = code.IndexOf("[DELETE_COMMAND_START]");
+                int endIndex = code.IndexOf("[DELETE_COMMAND_END]") + "[DELETE_COMMAND_END]".Length;
+
+                code = code.Replace(code.Substring(beginIndex, endIndex - beginIndex), string.Empty);
+            }
+            else
+            {
+                if (settings.MovieDownloadClient == DownloadClient.Radarr)
+                {
+                    _commandList[CommandType.Misc].Add($"{Language.Current.DiscordCommandDeleteName} {Language.Current.DiscordCommandDeleteMovieName}");
+                }
+                else
+                {
+                    int beginIndex = code.IndexOf("[DELETE_MOVIE_COMMAND_START]");
+                    int endIndex = code.IndexOf("[DELETE_MOVIE_COMMAND_END]") + "[DELETE_MOVIE_COMMAND_END]".Length;
+
+                    code = code.Replace(code.Substring(beginIndex, endIndex - beginIndex), string.Empty);
+                }
+
+                if (settings.TvShowDownloadClient == DownloadClient.Sonarr)
+                {
+                    _commandList[CommandType.Misc].Add($"{Language.Current.DiscordCommandDeleteName} {Language.Current.DiscordCommandDeleteTvName}");
+                }
+                else
+                {
+                    int beginIndex = code.IndexOf("[DELETE_TV_COMMAND_START]");
+                    int endIndex = code.IndexOf("[DELETE_TV_COMMAND_END]") + "[DELETE_TV_COMMAND_END]".Length;
+
+                    code = code.Replace(code.Substring(beginIndex, endIndex - beginIndex), string.Empty);
+                }
+
+                code = code.Replace("[DELETE_COMMAND_START]", string.Empty);
+                code = code.Replace("[DELETE_COMMAND_END]", string.Empty);
+                code = code.Replace("[DELETE_MOVIE_COMMAND_START]", string.Empty);
+                code = code.Replace("[DELETE_MOVIE_COMMAND_END]", string.Empty);
+                code = code.Replace("[DELETE_TV_COMMAND_START]", string.Empty);
+                code = code.Replace("[DELETE_TV_COMMAND_END]", string.Empty);
+            }
+
             //Sort list of commands into one list
             List<string> listOfCommands = _commandList.SelectMany(x => x.Value).ToList();
 

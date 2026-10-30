@@ -33,6 +33,7 @@ namespace Requestrr.WebApi.RequestrrBot
     public class ChatBot
     {
         private DiscordClient _client;
+        private readonly DiscordDeletionApprovals _deletionApprovals;
         private MovieNotificationEngine _movieNotificationEngine;
         private TvShowNotificationEngine _tvShowNotificationEngine;
         private MusicNotificationEngine _musicNotificationEngine;
@@ -66,6 +67,7 @@ namespace Requestrr.WebApi.RequestrrBot
             _logger = logger;
             _serviceProvider = serviceProvider;
             _discordSettingsProvider = discordSettingsProvider;
+            _deletionApprovals = new DiscordDeletionApprovals(logger);
             _overseerrClient = new OverseerrClient(serviceProvider.Get<IHttpClientFactory>(), serviceProvider.Get<ILogger<OverseerrClient>>(), serviceProvider.Get<OverseerrSettingsProvider>());
             _ombiDownloadClient = new OmbiClient(serviceProvider.Get<IHttpClientFactory>(), serviceProvider.Get<ILogger<OmbiClient>>(), serviceProvider.Get<OmbiSettingsProvider>());
             _radarrDownloadClient = new RadarrClient(serviceProvider.Get<IHttpClientFactory>(), serviceProvider.Get<ILogger<RadarrClient>>(), serviceProvider.Get<RadarrSettingsProvider>());
@@ -425,6 +427,13 @@ namespace Requestrr.WebApi.RequestrrBot
                 if (!e.Id.ToLower().Contains("modal"))
                     await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage);
 
+                //Deletion answers come from approvers, not from the author of the request
+                if (e.Id.ToLower().StartsWith("da"))
+                {
+                    await _deletionApprovals.HandleAnswerAsync(e, _client, _discordSettingsProvider.Provide(), DeleteApprovedMediaAsync);
+                    return;
+                }
+
                 var authorId = ulong.Parse(e.Id.Split("/").Skip(1).First());
 
                 if (e.User.Id == authorId)
@@ -436,6 +445,14 @@ namespace Requestrr.WebApi.RequestrrBot
                     else if (e.Id.ToLower().StartsWith("mir"))
                     {
                         await HandleMovieIssueAsync(e);
+                    }
+                    else if (e.Id.ToLower().StartsWith("md"))
+                    {
+                        await HandleMovieDeletionAsync(e);
+                    }
+                    else if (e.Id.ToLower().StartsWith("td"))
+                    {
+                        await HandleTvShowDeletionAsync(e);
                     }
                     else if (e.Id.ToLower().StartsWith("mnr"))
                     {
@@ -499,6 +516,80 @@ namespace Requestrr.WebApi.RequestrrBot
                 _logger.LogError(ex, "Error while handling interaction error: " + ex.Message);
             }
         }
+
+        /// <summary>
+        /// Handles the selection, approval request and cancellation of a movie deletion
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private async Task HandleMovieDeletionAsync(ComponentInteractionCreateEventArgs e)
+        {
+            var workflow = _movieWorkflowFactory.CreateDeletionWorkflow(e.Interaction);
+
+            if (e.Id.ToLower().StartsWith("mds"))
+            {
+                if (e.Values != null && e.Values.Any())
+                {
+                    await workflow.HandleMovieSelectionAsync(int.Parse(e.Values.Single()));
+                }
+            }
+            else if (e.Id.ToLower().StartsWith("mdc"))
+            {
+                var theMovieDbId = int.Parse(e.Id.Split("/").Last());
+                var movie = await workflow.FindMovieForDeletionAsync(theMovieDbId);
+
+                if (movie != null)
+                {
+                    await _deletionApprovals.RequestApprovalAsync(e, _discordSettingsProvider.Provide(), DeletionMediaType.Movie, theMovieDbId, movie.Title, await DiscordMovieUserInterface.GenerateMovieDetailsAsync(movie));
+                }
+            }
+            else if (e.Id.ToLower().StartsWith("mdx"))
+            {
+                await workflow.CancelAsync();
+            }
+        }
+
+
+        /// <summary>
+        /// Handles the selection, approval request and cancellation of a tv show deletion
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private async Task HandleTvShowDeletionAsync(ComponentInteractionCreateEventArgs e)
+        {
+            var workflow = _tvShowWorkflowFactory.CreateDeletionWorkflow(e.Interaction);
+
+            if (e.Id.ToLower().StartsWith("tds"))
+            {
+                if (e.Values != null && e.Values.Any())
+                {
+                    await workflow.HandleTvShowSelectionAsync(int.Parse(e.Values.Single()));
+                }
+            }
+            else if (e.Id.ToLower().StartsWith("tdc"))
+            {
+                var theTvDbId = int.Parse(e.Id.Split("/").Last());
+                var tvShow = await workflow.FindTvShowForDeletionAsync(theTvDbId);
+
+                if (tvShow != null)
+                {
+                    await _deletionApprovals.RequestApprovalAsync(e, _discordSettingsProvider.Provide(), DeletionMediaType.TvShow, theTvDbId, tvShow.Title, DiscordTvShowUserInterface.GenerateTvShowDetailsAsync(tvShow));
+                }
+            }
+            else if (e.Id.ToLower().StartsWith("tdx"))
+            {
+                await workflow.CancelAsync();
+            }
+        }
+
+
+        private Task<bool> DeleteApprovedMediaAsync(DeletionMediaType mediaType, int mediaId, DiscordInteraction interaction)
+        {
+            return mediaType == DeletionMediaType.Movie
+                ? _movieWorkflowFactory.CreateDeletionWorkflow(interaction).DeleteMovieAsync(mediaId)
+                : _tvShowWorkflowFactory.CreateDeletionWorkflow(interaction).DeleteTvShowAsync(mediaId);
+        }
+
 
         private async Task HandleMovieRequestAsync(ComponentInteractionCreateEventArgs e)
         {

@@ -39,6 +39,7 @@ namespace Requestrr.WebApi.Controllers.ChatClients
                 TvShowRoles = _chatClientsSettings.Discord.TvShowRoles ?? Array.Empty<string>(),
                 MovieRoles = _chatClientsSettings.Discord.MovieRoles ?? Array.Empty<string>(),
                 MusicRoles = _chatClientsSettings.Discord.MusicRoles ?? Array.Empty<string>(),
+                DeleteApprovalRoles = _chatClientsSettings.Discord.DeleteApprovalRoles ?? Array.Empty<string>(),
                 MonitoredChannels = _chatClientsSettings.Discord.MonitoredChannels ?? Array.Empty<string>(),
                 AutomaticallyNotifyRequesters = _chatClientsSettings.Discord.AutomaticallyNotifyRequesters,
                 NotificationMode = _chatClientsSettings.Discord.NotificationMode,
@@ -139,6 +140,11 @@ namespace Requestrr.WebApi.Controllers.ChatClients
                 return BadRequest("Invalid music roles, please make sure to enter the discord role ids.");
             }
 
+            if ((model.DeleteApprovalRoles ?? Array.Empty<string>()).Any(x => !ulong.TryParse(x, System.Globalization.NumberStyles.Integer, null, out _)))
+            {
+                return BadRequest("Invalid deletion approval roles, please make sure to enter the discord role ids.");
+            }
+
             if (model.NotificationChannels.Any(x => !ulong.TryParse(x, System.Globalization.NumberStyles.Integer, null, out _)))
             {
                 return BadRequest("Invalid notification channels, please make sure to enter the discord channel ids.");
@@ -155,6 +161,7 @@ namespace Requestrr.WebApi.Controllers.ChatClients
             _chatClientsSettings.Discord.TvShowRoles = (model.TvShowRoles ?? Array.Empty<string>()).Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()).ToArray();
             _chatClientsSettings.Discord.MovieRoles = (model.MovieRoles ?? Array.Empty<string>()).Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()).ToArray();
             _chatClientsSettings.Discord.MusicRoles = (model.MusicRoles ?? Array.Empty<string>()).Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()).ToArray();
+            _chatClientsSettings.Discord.DeleteApprovalRoles = (model.DeleteApprovalRoles ?? Array.Empty<string>()).Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()).ToArray();
             _chatClientsSettings.Discord.EnableRequestsThroughDirectMessages = model.EnableRequestsThroughDirectMessages;
             _chatClientsSettings.Discord.MonitoredChannels = (model.MonitoredChannels ?? Array.Empty<string>()).Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()).ToArray();
 

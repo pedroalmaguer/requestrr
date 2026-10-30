@@ -12,6 +12,7 @@
       "TvShowRoles": [],
       "MovieRoles": [],
       "MusicRoles": [],
+      "DeleteApprovalRoles": [],
       "MonitoredChannels": [],
       "EnableRequestsThroughDirectMessages": false,
       "AutomaticallyNotifyRequesters": true,
@@ -129,5 +130,5 @@
   "Port": 4545,
   "BaseUrl": "",
   "DisableAuthentication": false,
-  "Version": "2.1.3"
+  "Version": "2.1.4"
 }

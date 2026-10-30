@@ -9,7 +9,7 @@ using Requestrr.WebApi.RequestrrBot.TvShows;
 
 namespace Requestrr.WebApi.RequestrrBot.ChatClients.Discord
 {
-    public class DiscordTvShowUserInterface : ITvShowUserInterface
+    public class DiscordTvShowUserInterface : ITvShowUserInterface, ITvShowDeletionUserInterface
     {
         private readonly DiscordInteraction _interactionContext;
         private readonly ITvShowIssueSearcher _tvShowIssue;
@@ -306,6 +306,33 @@ namespace Requestrr.WebApi.RequestrrBot.ChatClients.Discord
             await _interactionContext.CreateResponseAsync(InteractionResponseType.UpdateMessage, new DiscordInteractionResponseBuilder()
                 .WithContent(success ? Language.Current.DiscordCommandTvIssueSuccess.ReplaceTokens(tvShow) : Language.Current.DiscordCommandTvIssueFailed.ReplaceTokens(tvShow))
             );
+        }
+
+
+        public async Task ShowTvShowDeletionSelection(IReadOnlyList<TvShow> tvShows)
+        {
+            var options = tvShows.Take(15).Select(x => new DiscordSelectComponentOption(GetFormatedTvShowTitle(x), x.TheTvDbId.ToString())).ToList();
+            var select = new DiscordSelectComponent($"TDS/{_interactionContext.User.Id}", LimitStringSize(Language.Current.DiscordCommandTvRequestHelpSearchDropdown), options);
+
+            await _interactionContext.EditOriginalResponseAsync(new DiscordWebhookBuilder().AddComponents(select).WithContent(Language.Current.DiscordCommandTvRequestHelpSearch));
+        }
+
+
+        public async Task DisplayTvShowDeletionConfirmationAsync(TvShow tvShow)
+        {
+            var confirmButton = new DiscordButtonComponent(ButtonStyle.Danger, $"TDC/{_interactionContext.User.Id}/{tvShow.TheTvDbId}", Language.Current.DiscordCommandDeleteButton);
+            var cancelButton = new DiscordButtonComponent(ButtonStyle.Secondary, $"TDX/{_interactionContext.User.Id}", Language.Current.DiscordCommandDeleteCancelButton);
+
+            var builder = new DiscordWebhookBuilder().AddEmbed(GenerateTvShowDetailsAsync(tvShow)).AddComponents(confirmButton, cancelButton).WithContent(Language.Current.DiscordCommandDeleteTvConfirm.ReplaceTokens(tvShow));
+            await _interactionContext.EditOriginalResponseAsync(builder);
+        }
+
+
+        public async Task DisplayTvShowDeletionCancelledAsync()
+        {
+            var cancelledButton = new DiscordButtonComponent(ButtonStyle.Secondary, "0/1/0", Language.Current.DiscordCommandDeleteCancelButton, true);
+
+            await _interactionContext.EditOriginalResponseAsync(new DiscordWebhookBuilder().AddComponents(cancelledButton).WithContent(Language.Current.DiscordCommandDeleteCancelled));
         }
 
 

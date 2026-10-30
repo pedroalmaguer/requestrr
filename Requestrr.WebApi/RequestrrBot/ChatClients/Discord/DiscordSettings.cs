@@ -12,6 +12,7 @@ namespace Requestrr.WebApi.RequestrrBot.ChatClients.Discord
         public string[] TvShowRoles { get; set; }
         public string[] MovieRoles { get; set; }
         public string[] MusicRoles { get; set; }
+        public string[] DeleteApprovalRoles { get; set; }
         public string MovieDownloadClient { get; set; }
         public int MovieDownloadClientConfigurationHash { get; set; }
         public string TvShowDownloadClient { get; set; }
@@ -34,6 +35,7 @@ namespace Requestrr.WebApi.RequestrrBot.ChatClients.Discord
                    TvShowRoles.SequenceEqual(settings.TvShowRoles) &&
                    MovieRoles.SequenceEqual(settings.MovieRoles) &&
                    MusicRoles.SequenceEqual(settings.MusicRoles) &&
+                   DeleteApprovalRoles.SequenceEqual(settings.DeleteApprovalRoles) &&
                    MovieDownloadClient == settings.MovieDownloadClient &&
                    MovieDownloadClientConfigurationHash == settings.MovieDownloadClientConfigurationHash &&
                    TvShowDownloadClient == settings.TvShowDownloadClient &&
@@ -57,6 +59,7 @@ namespace Requestrr.WebApi.RequestrrBot.ChatClients.Discord
             hash.Add(MovieRoles);
             hash.Add(TvShowRoles);
             hash.Add(MusicRoles);
+            hash.Add(DeleteApprovalRoles);
             hash.Add(MovieDownloadClient);
             hash.Add(MovieDownloadClientConfigurationHash);
             hash.Add(TvShowDownloadClient);

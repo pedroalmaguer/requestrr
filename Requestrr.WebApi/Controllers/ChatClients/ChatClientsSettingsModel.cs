@@ -23,6 +23,8 @@ namespace Requestrr.WebApi.Controllers.ChatClients
 
         public string[] MusicRoles { get; set; }
 
+        public string[] DeleteApprovalRoles { get; set; }
+
         public bool EnableRequestsThroughDirectMessages { get; set; }
 
         public bool AutomaticallyNotifyRequesters { get; set; }
