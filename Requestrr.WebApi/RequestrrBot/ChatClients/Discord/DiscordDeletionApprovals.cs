@@ -301,7 +301,26 @@ namespace Requestrr.WebApi.RequestrrBot.ChatClients.Discord
                 requesters = pending.Requesters.Where(x => x.UserId != skipUserId).ToArray();
             }
 
-            foreach (var channelRequesters in requesters.GroupBy(x => x.ChannelId))
+            //The outcome is private to the requester, so it goes by direct message
+            var unreachable = new List<DeletionRequester>();
+
+            foreach (var requester in requesters)
+            {
+                try
+                {
+                    var guild = await client.GetGuildAsync(pending.GuildId);
+                    var member = await guild.GetMemberAsync(requester.UserId);
+                    await member.SendMessageAsync(content);
+                }
+                catch (System.Exception ex)
+                {
+                    _logger.LogWarning(ex, $"Could not send deletion answer to requester {requester.UserId} by direct message: " + ex.Message);
+                    unreachable.Add(requester);
+                }
+            }
+
+            //Requesters who don't accept direct messages are told in the channel of their request instead, so they are never left without an answer
+            foreach (var channelRequesters in unreachable.GroupBy(x => x.ChannelId))
             {
                 try
                 {
