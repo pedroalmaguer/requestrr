@@ -1,0 +1,57 @@
+# Builds every push to `development` and publishes it as the rolling `dev-latest` prerelease.
+# The requestrr-test box polls that release and installs new builds itself: GitHub's runners
+# can't reach the LAN, so nothing is pushed to it.
+name: Build development
+
+on:
+  push:
+    branches: [development]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-development
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 6.0.x
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Publish self-contained linux-x64 build
+        working-directory: Requestrr.WebApi
+        env:
+          # CRA fails the build on lint warnings when CI=true
+          CI: "false"
+        run: |
+          dotnet publish -c Release -r linux-x64 --self-contained true -o "$RUNNER_TEMP/publish" Requestrr.WebApi.csproj
+          rm -rf "$RUNNER_TEMP/publish/config" "$RUNNER_TEMP/publish/tmp" "$RUNNER_TEMP/publish/appsettings.Development.json"
+
+      - name: Package
+        run: |
+          mkdir -p dist
+          tar -C "$RUNNER_TEMP/publish" -czf dist/requestrr-linux-x64.tar.gz .
+          echo "$GITHUB_SHA" > dist/version.txt
+          (cd dist && sha256sum requestrr-linux-x64.tar.gz > requestrr-linux-x64.tar.gz.sha256)
+
+      - name: Publish dev-latest prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete dev-latest --yes --cleanup-tag || true
+          gh release create dev-latest dist/* \
+            --target "$GITHUB_SHA" \
+            --prerelease \
+            --title "Development build (${GITHUB_SHA::7})" \
+            --notes "Automatic build of \`${GITHUB_REF_NAME}\` at ${GITHUB_SHA}. Replaced on every push."
